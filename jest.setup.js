@@ -1,7 +1,7 @@
 // Mock the necessary modules and APIs for testing
 
 // Silence the warning: Animated: `useNativeDriver` is not supported
-jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper');
+// jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper');
 
 // Mock expo-constants
 jest.mock('expo-constants', () => ({

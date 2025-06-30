@@ -17,37 +17,12 @@ import UploadScreen from '../screens/UploadScreen';
 import ChatsScreen from '../screens/ChatsScreen';
 import ChatScreen from '../screens/ChatScreen';
 
-// Define types for our navigation parameters
-export type RootStackParamList = {
-  Auth: undefined;
-  Main: undefined;
-  SignIn: undefined;
-  SignUp: undefined;
-  ForgotPassword: undefined;
-};
-
-export type AuthStackParamList = {
-  SignIn: undefined;
-  SignUp: undefined;
-  ForgotPassword: undefined;
-};
-
-export type MainTabParamList = {
-  Home: undefined;
-  Cases: undefined;
-  Upload: undefined;
-  Chats: undefined;
-  Profile: undefined;
-};
-
-export type MainStackParamList = {
-  MainTabs: undefined;
-  Chat: {
-    receiverId: string;
-    receiverName: string;
-    caseId?: string;
-  };
-};
+import {
+  RootStackParamList,
+  AuthStackParamList,
+  MainTabParamList,
+  MainStackParamList
+} from '../types/navigation';
 
 // Create the navigators
 const Stack = createNativeStackNavigator<RootStackParamList>();

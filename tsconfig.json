@@ -7,31 +7,16 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@app/*": [
-        "./app/*"
-      ],
-      "@components/*": [
-        "./components/*"
-      ],
-      "@screens/*": [
-        "./screens/*"
-      ],
-      "@services/*": [
-        "./services/*"
-      ],
-      "@utils/*": [
-        "./utils/*"
-      ],
-      "@contexts/*": [
-        "./contexts/*"
-      ],
-      "@navigation/*": [
-        "./navigation/*"
-      ],
-      "*": [
-        "*",
-        "node_modules/*"
-      ]
+      "@app/*": ["./app/*"],
+      "@components/*": ["./components/*"],
+      "@screens/*": ["./screens/*"],
+      "@services/*": ["./services/*"],
+      "@utils/*": ["./utils/*"],
+      "@contexts/*": ["./contexts/*"],
+      "@navigation/*": ["./navigation/*"],
+      "@types/*": ["./types/*"],
+      "@constants/*": ["./constants/*"],
+      "*": ["*", "node_modules/*"]
     },
     "lib": [
       "DOM",

@@ -1,78 +1,28 @@
-// User related types
-export type User = {
-  id: string;
-  email: string;
-  name?: string;
-  avatar_url?: string;
-};
+// Re-export all types from organized modules
+export * from './auth';
+export * from './navigation';
+export * from './api';
 
-// Auth related types
-export type AuthError = {
-  message: string;
-  status?: number;
-};
+// Legacy types for backward compatibility (to be removed after migration)
+export type { User as LegacyUser } from './auth';
+export type { Case as MedicalCase } from './api';
 
-// Healthcare related types
-export type MedicalCase = {
+// Additional utility types
+export interface BaseEntity {
   id: string;
-  user_id: string;
-  title: string;
-  description?: string;
-  status: 'active' | 'resolved' | 'archived';
   created_at: string;
   updated_at: string;
-  documents?: Document[];
-};
+}
 
-export type Document = {
-  id: string;
-  user_id: string;
-  case_id: string;
-  name: string;
-  description?: string;
-  file_path: string;
-  file_type: string;
-  size: number;
-  created_at: string;
-  updated_at: string;
-};
+export interface PaginationParams {
+  page?: number;
+  limit?: number;
+  offset?: number;
+}
 
-// Doctor related types
-export type Doctor = {
-  id: string;
-  name: string;
-  specialty: string;
-  avatar_url?: string;
-  hospital?: string;
-  bio?: string;
-};
-
-// Chat related types
-export type Message = {
-  id: string;
-  text: string;
-  sender_id: string;
-  sender_type: 'user' | 'doctor' | 'system';
-  created_at: string;
-  read: boolean;
-  conversation_id: string;
-  attachments?: Attachment[];
-};
-
-export type Conversation = {
-  id: string;
-  title: string;
-  participants: string[];
-  last_message?: string;
-  last_message_time?: string;
-  unread_count: number;
-};
-
-export type Attachment = {
-  id: string;
-  file_path: string;
-  file_type: string;
-  file_name: string;
-  size: number;
-  message_id: string;
-}; 
+export interface SearchParams {
+  query?: string;
+  filters?: Record<string, any>;
+  sort?: string;
+  order?: 'asc' | 'desc';
+} 

@@ -1,32 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase, fetchUserProfile, updateUserProfile } from '../services/supabase';
-import { Session } from '@supabase/supabase-js';
-
-// Define the types for our auth state and context
-type User = {
-  id: string;
-  email: string;
-  fullName?: string;
-};
-
-type AuthState = {
-  user: User | null;
-  session: Session | null;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-};
-
-type AuthContextProps = AuthState & {
-  signIn: (email: string, password: string) => Promise<{ error?: { message: string } }>;
-  signUp: (email: string, password: string, fullName?: string) => Promise<{ error?: { message: string } }>;
-  signOut: () => Promise<void>;
-  resetPassword: (email: string) => Promise<{ error?: { message: string } }>;
-  updateProfile: (updates: { first_name?: string; last_name?: string; phone?: string; date_of_birth?: string }) => Promise<{ error?: { message: string } }>;
-};
+import { AuthContextType, AuthState, User, AuthResult, ProfileUpdates } from '../types/auth';
 
 // Create the context with a default value
-const AuthContext = createContext<AuthContextProps | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Create a provider component
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -108,9 +86,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Sign in function
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string): Promise<AuthResult> => {
     try {
-      setState(prev => ({ ...prev, isLoading: true }));
+      setState((prev: AuthState) => ({ ...prev, isLoading: true }));
       console.log(`Attempting to sign in with email: ${email}`);
       
       const { data, error } = await supabase.auth.signInWithPassword({ 
@@ -133,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       };
     } finally {
-      setState(prev => ({ ...prev, isLoading: false }));
+      setState((prev: AuthState) => ({ ...prev, isLoading: false }));
     }
   };
 
@@ -175,9 +153,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // Sign up function
-  const signUp = async (email: string, password: string, fullName?: string) => {
+  const signUp = async (email: string, password: string, fullName?: string): Promise<AuthResult> => {
     try {
-      setState(prev => ({ ...prev, isLoading: true }));
+      setState((prev: AuthState) => ({ ...prev, isLoading: true }));
       console.log(`Attempting to sign up with email: ${email}`);
       
       const { data, error } = await supabase.auth.signUp({
@@ -217,14 +195,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       };
     } finally {
-      setState(prev => ({ ...prev, isLoading: false }));
+      setState((prev: AuthState) => ({ ...prev, isLoading: false }));
     }
   };
 
   // Sign out function
   const signOut = async () => {
     try {
-      setState(prev => ({ ...prev, isLoading: true }));
+      setState((prev: AuthState) => ({ ...prev, isLoading: true }));
       const { error } = await supabase.auth.signOut();
       
       if (error) {
@@ -240,14 +218,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Failed to sign out', error);
     } finally {
-      setState(prev => ({ ...prev, isLoading: false }));
+      setState((prev: AuthState) => ({ ...prev, isLoading: false }));
     }
   };
 
   // Reset password function
-  const resetPassword = async (email: string) => {
+  const resetPassword = async (email: string): Promise<AuthResult> => {
     try {
-      setState(prev => ({ ...prev, isLoading: true }));
+      setState((prev: AuthState) => ({ ...prev, isLoading: true }));
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: 'io.clinyc.app://reset-password/',
       });
@@ -265,17 +243,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       };
     } finally {
-      setState(prev => ({ ...prev, isLoading: false }));
+      setState((prev: AuthState) => ({ ...prev, isLoading: false }));
     }
   };
 
   // Update user profile
-  const updateProfile = async (updates: { 
-    first_name?: string; 
-    last_name?: string; 
-    phone?: string; 
-    date_of_birth?: string 
-  }) => {
+  const updateProfile = async (updates: ProfileUpdates): Promise<AuthResult> => {
     try {
       if (!state.user?.id) {
         return { error: { message: 'User not authenticated' } };

@@ -39,6 +39,8 @@ module.exports = function(api) {
           "@utils": "./utils",
           "@contexts": "./contexts",
           "@navigation": "./navigation",
+          "@types": "./types",
+          "@constants": "./constants",
           "@babel/runtime": "./node_modules/@babel/runtime"
         }
       }]

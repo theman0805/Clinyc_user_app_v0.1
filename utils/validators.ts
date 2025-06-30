@@ -1,39 +1,13 @@
-/**
- * Validates if the provided string is a valid email format
- * @param email The email string to validate
- * @returns boolean indicating if the email format is valid
- */
-export const isValidEmail = (email: string): boolean => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-};
+// Re-export validation functions from the new auth utils
+import { validateEmail, validatePassword, validatePhone } from './auth';
 
-/**
- * Validates password strength
- * Requirements:
- * - At least 8 characters
- * - Contains at least one uppercase letter
- * - Contains at least one lowercase letter
- * - Contains at least one number
- * 
- * @param password The password to validate
- * @returns boolean indicating if the password meets requirements
- */
-export const isStrongPassword = (password: string): boolean => {
-  // At least 8 characters
-  if (password.length < 8) return false;
-  
-  // Contains at least one uppercase letter
-  if (!/[A-Z]/.test(password)) return false;
-  
-  // Contains at least one lowercase letter
-  if (!/[a-z]/.test(password)) return false;
-  
-  // Contains at least one number
-  if (!/[0-9]/.test(password)) return false;
-  
-  return true;
-};
+// Legacy function names for backward compatibility
+export const isValidEmail = validateEmail;
+export const isStrongPassword = validatePassword;
+export const isValidPhone = validatePhone;
+
+// Also export the new function names
+export { validateEmail, validatePassword, validatePhone };
 
 /**
  * Validates that two passwords match
@@ -46,18 +20,6 @@ export const doPasswordsMatch = (password: string, confirmPassword: string): boo
 };
 
 /**
- * Validates phone number format (basic validation)
- * @param phone The phone number to validate
- * @returns boolean indicating if the phone number is valid
- */
-export const isValidPhone = (phone: string): boolean => {
-  // Remove spaces, dashes, and parentheses before testing
-  const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
-  // Basic check: 10+ digits
-  return /^\+?[\d]{10,}$/.test(cleanPhone);
-};
-
-/**
  * Validates name format (no numbers or special characters)
  * @param name The name to validate
  * @returns boolean indicating if the name is valid
@@ -65,4 +27,36 @@ export const isValidPhone = (phone: string): boolean => {
 export const isValidName = (name: string): boolean => {
   // Only letters, spaces, and hyphens allowed
   return /^[a-zA-Z\s\-']+$/.test(name) && name.trim().length > 0;
+};
+
+// Date validation function
+export const validateDate = (dateString: string): boolean => {
+  const date = new Date(dateString);
+  return date instanceof Date && !isNaN(date.getTime());
+};
+
+// File validation functions
+export const validateFileType = (fileName: string, allowedTypes: string[]): boolean => {
+  const extension = fileName.split('.').pop()?.toLowerCase();
+  return extension ? allowedTypes.includes(extension) : false;
+};
+
+export const validateFileSize = (fileSize: number, maxSize: number): boolean => {
+  return fileSize <= maxSize;
+};
+
+// Form validation helpers
+export const getValidationMessage = (field: string, value: string): string | null => {
+  switch (field) {
+    case 'email':
+      return validateEmail(value) ? null : 'Please enter a valid email address';
+    case 'password':
+      return validatePassword(value) ? null : 'Password must be at least 8 characters with uppercase, lowercase, number, and special character';
+    case 'phone':
+      return validatePhone(value) ? null : 'Please enter a valid phone number';
+    case 'name':
+      return isValidName(value) ? null : 'Name must contain only letters, spaces, and hyphens';
+    default:
+      return null;
+  }
 }; 

@@ -4,9 +4,12 @@ import { createClient } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
 
 // Get Supabase credentials from Constants (app.config.js)
-// Fallback to hardcoded values if not provided through app.config.js
-const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl || 'https://dgbauvfjeceazjnngire.supabase.co';
-const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRnYmF1dmZqZWNlYXpqbm5naXJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTQwMzM5NzcsImV4cCI6MjAyOTYwOTk3N30.Zv4BQGTx6TLKdVwBK6InQ1L7SHFqLHLr-WDZmmWC48Q';
+const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl;
+const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Supabase URL or Anon Key is not defined. Make sure your .env file is set up correctly.');
+}
 
 console.log('Initializing Supabase with URL:', supabaseUrl);
 
@@ -35,22 +38,18 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 // Export types for use throughout the app
 export type { User, Session } from '@supabase/supabase-js';
-
-// User profile type definition
-export type Profile = {
-  id: string;
-  first_name: string;
-  last_name: string;
-  avatar_url: string | null;
-  email: string;
-  phone: string | null;
-  date_of_birth: string | null;
-  created_at: string;
-  updated_at: string;
-};
+import type { 
+  Profile, 
+  Case, 
+  Document, 
+  Message, 
+  ApiResponse, 
+  FileData, 
+  UploadResult 
+} from '../types/api';
 
 // Fetch user profile data
-export const fetchUserProfile = async (userId: string) => {
+export const fetchUserProfile = async (userId: string): Promise<ApiResponse<Profile>> => {
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
@@ -64,7 +63,7 @@ export const fetchUserProfile = async (userId: string) => {
 export const updateUserProfile = async (
   userId: string,
   updates: Partial<Omit<Profile, 'id' | 'created_at' | 'updated_at'>>
-) => {
+): Promise<ApiResponse<Profile>> => {
   const { data, error } = await supabase
     .from('profiles')
     .update(updates)
@@ -141,19 +140,6 @@ export async function fetchCaseDocuments(caseId: string) {
     .order('created_at', { ascending: false });
 }
 
-// Upload a document
-export async function uploadDocument(userId: string, filePath: string, fileData: any) {
-  const fileName = filePath.split('/').pop();
-  const fileExtension = fileName?.split('.').pop();
-  const path = `${userId}/${Date.now()}.${fileExtension}`;
-  
-  const { data, error } = await supabase.storage
-    .from('user-files')
-    .upload(path, fileData);
-    
-  return { path, data, error };
-}
-
 // Save document metadata
 export async function saveDocumentMetadata(
   userId: string,
@@ -164,26 +150,81 @@ export async function saveDocumentMetadata(
   fileSize: number,
   description?: string
 ) {
-  const { data, error } = await supabase
-    .from('documents')
-    .insert([
-      {
-        user_id: userId,
-        case_id: caseId,
-        name,
-        description,
-        storage_path: storagePath,
-        file_type: fileType,
-        size: fileSize,
-        processed: false,
-        text_extracted: false,
-        created_at: new Date().toISOString(),
-      }
-    ])
-    .select('*')
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('documents')
+      .insert([
+        {
+          user_id: userId,
+          case_id: caseId,
+          name,
+          description,
+          storage_path: storagePath,
+          file_type: fileType,
+          size: fileSize,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      ])
+      .select('*')
+      .single();
 
-  return { data, error };
+    if (error) {
+      console.error('Metadata save error:', error);
+      return { data: null, error };
+    }
+
+    return { data, error: null };
+  } catch (error) {
+    console.error('Document metadata error:', error);
+    return { data: null, error };
+  }
+}
+
+// Upload a document
+export async function uploadDocument(userId: string, fileUri: string, fileData: any) {
+  try {
+    // Generate a unique file name with timestamp
+    const timestamp = Date.now();
+    const fileName = fileData.name || `document-${timestamp}`;
+    // Sanitize the filename to remove special characters
+    const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const fileExtension = sanitizedFileName.split('.').pop() || 'pdf';
+    const path = `${userId}/${timestamp}-${sanitizedFileName}`;
+
+    // Convert file to blob
+    const response = await fetch(fileUri);
+    const blob = await response.blob();
+
+    // Upload to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from('user-files')
+      .upload(path, blob, {
+        contentType: fileData.mimeType || 'application/octet-stream',
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (error) {
+      console.error('Upload error:', error);
+      return { path: null, data: null, error };
+    }
+
+    // Get the public URL
+    const { data: urlData } = supabase.storage
+      .from('user-files')
+      .getPublicUrl(path);
+
+    return { 
+      path, 
+      data, 
+      error: null,
+      publicUrl: urlData.publicUrl 
+    };
+  } catch (error) {
+    console.error('Document upload error:', error);
+    return { path: null, data: null, error };
+  }
 }
 
 // Share a case
@@ -199,24 +240,13 @@ export async function shareCase(caseId: string, recipientId: string, shareType: 
     }]);
 }
 
-// Message type definition
-export interface Message {
-  id: string;
-  sender_id: string;
-  receiver_id: string;
-  case_id?: string;
-  content: string;
-  created_at: string;
-  is_read: boolean;
-}
-
 // Send a message
 export async function sendMessage(
   senderId: string,
   receiverId: string,
   content: string,
   caseId?: string
-) {
+): Promise<ApiResponse<Message>> {
   const { data, error } = await supabase
     .from('messages')
     .insert([
@@ -301,25 +331,5 @@ export async function fetchConversations(userId: string) {
   return { data, error };
 }
 
-// Define API types
-export interface Case {
-  id: number;
-  user_id: string;
-  name: string;
-  description?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Document {
-  id: number;
-  user_id: string;
-  case_id?: string;
-  name: string;
-  storage_path: string;
-  file_type: string;
-  size: number;
-  processed: boolean;
-  text_extracted: boolean;
-  created_at: string;
-} 
+// Re-export types for backward compatibility
+export type { Profile, Case, Document, Message } from '../types/api'; 

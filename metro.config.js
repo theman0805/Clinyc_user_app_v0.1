@@ -8,4 +8,23 @@ const config = getDefaultConfig(__dirname);
 // Disable package.json exports field support to resolve Node.js module issues
 config.resolver.unstable_enablePackageExports = false;
 
+// Exclude problematic directories from file watching
+config.watchFolders = config.watchFolders || [];
+config.resolver.blockList = [
+  /myenv\/.*/,
+  /\.venv\/.*/,
+  /path\/.*/,
+  /\.cursor\/.*/,
+  /node_modules\/.*\/node_modules\/.*/,
+];
+
+// Add Node.js polyfills for React Native
+config.resolver.alias = {
+  ...config.resolver.alias,
+  buffer: require.resolve('buffer'),
+};
+
+// Configure resolver to handle Node.js modules
+config.resolver.resolverMainFields = ['react-native', 'browser', 'main'];
+
 module.exports = config; 
